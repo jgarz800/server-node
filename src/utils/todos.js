@@ -1,5 +1,5 @@
 import Joi from 'joi'
-import { PrismaClient } from '@primsa/client'
+import { PrismaClient } from '@prisma/client'
 
 const db = new PrismaClient()
 
@@ -66,22 +66,42 @@ export const addTodo = async (todo) => {
         },
     })
 
-    return newTodo
+    return {newTodo}
 }
 
-export const updateTodo = (id, todo) => {
+export const updateTodo = async (id, todo) => {
     logger.log.info(`Validating ${todo} for update`)
-    const { error } = todoSchema.validate(todo)
+    const { error: todoError, value: todoValue } = todoSchema.validate(todo)
   
-    if (error) {
-      logger.log.error(new Error(`Validation error: ${error.message}`))
-      return { error }
+    if (todoError) {
+      logger.log.error(new Error(`Validation error: ${todoError.message}`))
+      return { todoError }
     }
   
-    logger.log.success(`Validated: ${todo}`)
-    const todoIndex = todos.findIndex((t) => t.id === id)
-    todos[todoIndex] = { id, ...todo }
-    const updatedTodo = todos[todoIndex]
+    logger.log.info(`Validating id: ${id}`)
+    const {error: idError, value: idValue} = idSchema.validate(id)
+
+    if(idError){
+        logger.log.error(new Error(`Validation error: ${idError.message}`))
+        return {idError}
+    }
+
+    logger.log.success(`Validated todo and ID`)
+
+    const updatedTodo = await db.todos.update({
+        where: {
+            id:idValue,
+        },
+        data:{
+            ...todoValue,
+        },
+        select:{
+            id: true,
+            text: true,
+            completed: true,
+        },
+    })
+    
     return { updatedTodo }
   }
 

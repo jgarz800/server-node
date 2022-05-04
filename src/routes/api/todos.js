@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
     res.send(todos)
 })
 
-router.get(`/:id`, asyn (req, res, next) => {
+router.get('/:id', async (req, res, next) => {
     const todo = await getTodo(req.params.id)
     if(todo){
         res.send(todo)
